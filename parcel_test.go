@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	_ "modernc.org/sqlite" // Импортируйте драйвер modernc.org/sqlite
 )
 
 var (
@@ -28,12 +29,23 @@ func getTestParcel() Parcel {
 	}
 }
 
+// createTable создает таблицу parcel, если она не существует
+func createTable(db *sql.DB) error {
+	query := `
+	CREATE TABLE IF NOT EXISTS parcel (number INTEGER PRIMARY KEY AUTOINCREMENT,client INTEGER NOT NULL,status INTEGER NOT NULL,address TEXT NOT NULL,created_at TEXT NOT NULL);`
+	_, err := db.Exec(query)
+	return err
+}
+
 // TestAddGetDelete проверяет добавление, получение и удаление посылки
 func TestAddGetDelete(t *testing.T) {
 	// prepare
 	db, err := sql.Open("sqlite", "test_tracker.db")
 	require.NoError(t, err, "failed to open test db")
 	defer db.Close()
+
+	err = createTable(db) // Создаем таблицу
+	require.NoError(t, err, "failed to create table")
 
 	store := NewParcelStore(db)
 	parcel := getTestParcel()
@@ -65,9 +77,12 @@ func TestAddGetDelete(t *testing.T) {
 // TestSetAddress проверяет обновление адреса
 func TestSetAddress(t *testing.T) {
 	// prepare
-	db, err := sql.Open("sqlite3", "test_tracker.db") // настройте подключение к БД
+	db, err := sql.Open("sqlite", "test_tracker.db") // настройте подключение к БД
 	require.NoError(t, err, "failed to open database")
 	defer db.Close()
+
+	err = createTable(db) // Создаем таблицу
+	require.NoError(t, err, "failed to create table")
 
 	store := NewParcelStore(db)
 	parcel := getTestParcel()
@@ -93,9 +108,12 @@ func TestSetAddress(t *testing.T) {
 // TestSetStatus проверяет обновление статуса
 func TestSetStatus(t *testing.T) {
 	// prepare
-	db, err := sql.Open("sqlite3", "test_tracker.db") // настройте подключение к БД
+	db, err := sql.Open("sqlite", "test_tracker.db") // настройте подключение к БД
 	require.NoError(t, err, "failed to open database")
 	defer db.Close()
+
+	err = createTable(db) // Создаем таблицу
+	require.NoError(t, err, "failed to create table")
 
 	store := NewParcelStore(db)
 	parcel := getTestParcel()
@@ -119,9 +137,12 @@ func TestSetStatus(t *testing.T) {
 // TestGetByClient проверяет получение посылок по идентификатору клиента
 func TestGetByClient(t *testing.T) {
 	// prepare
-	db, err := sql.Open("sqlite3", "test_tracker.db") // настройте подключение к БД
+	db, err := sql.Open("sqlite", "test_tracker.db") // настройте подключение к БД
 	require.NoError(t, err, "failed to open database")
 	defer db.Close()
+
+	err = createTable(db) // Создаем таблицу
+	require.NoError(t, err, "failed to create table")
 
 	store := NewParcelStore(db)
 
