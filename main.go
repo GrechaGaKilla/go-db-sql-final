@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -98,7 +99,16 @@ func (s ParcelService) Delete(number int) error {
 }
 
 func main() {
-	db, err := sql.Open("sqlite", "tracker.db")
+	dbPath := "tracker.db"
+	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+		fmt.Println("Database file does not exist, creating new one...")
+		file, err := os.Create(dbPath)
+		if err != nil {
+			log.Fatalf("failed to create database file: %v", err)
+		}
+		file.Close()
+	}
+	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		log.Fatal("failed to open database", err)
 	}

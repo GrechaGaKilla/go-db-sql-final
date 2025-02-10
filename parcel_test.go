@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"testing"
 	"time"
@@ -54,14 +55,17 @@ func TestAddGetDelete(t *testing.T) {
 	id, err := store.Add(parcel)
 	require.NoError(t, err, "failed to add parcel")
 	require.Greater(t, id, 0, "invalid parcel id")
-	// добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
+
+	parcel.Number = id // <--- ADD THIS LINE: Update the parcel's Number with the generated ID
 
 	// get
 	storedParcel, err := store.Get(id)
 	require.NoError(t, err, "failed to get parcel")
-	require.Equal(t, parcel.Client, storedParcel.Client, "client mismatch")
+	assert.Equal(t, parcel.Number, storedParcel.Number, "number mismatch") //ADDED ASSERT
+
 	// получите только что добавленную посылку, убедитесь в отсутствии ошибки
 	// проверьте, что значения всех полей в полученном объекте совпадают со значениями полей в переменной parcel
+	require.Equal(t, parcel.Client, storedParcel.Client, "client mismatch")
 	require.Equal(t, parcel.Status, storedParcel.Status, "status mismatch")
 	require.Equal(t, parcel.Address, storedParcel.Address, "address mismatch")
 	require.Equal(t, parcel.CreatedAt, storedParcel.CreatedAt, "created_at mismatch")
@@ -102,7 +106,7 @@ func TestSetAddress(t *testing.T) {
 	storedParcel, err := store.Get(id)
 	// получите добавленную посылку и убедитесь, что адрес обновился
 	require.NoError(t, err, "failed to get parcel")
-	require.Equal(t, newAddress, storedParcel.Address, "address should be updated")
+	assert.Equal(t, newAddress, storedParcel.Address, "address should be updated")
 }
 
 // TestSetStatus проверяет обновление статуса
@@ -131,7 +135,7 @@ func TestSetStatus(t *testing.T) {
 	// check
 	storedParcel, err := store.Get(id) // получите добавленную посылку и убедитесь, что статус обновился
 	require.NoError(t, err, "failed to get parcel")
-	require.Equal(t, newStatus, storedParcel.Status, "status should be updated")
+	assert.Equal(t, newStatus, storedParcel.Status, "status should be updated")
 }
 
 // TestGetByClient проверяет получение посылок по идентификатору клиента
@@ -173,7 +177,7 @@ func TestGetByClient(t *testing.T) {
 	// get by client
 	storedParcels, err := store.GetByClient(client) // получите список посылок по идентификатору клиента, сохранённого в переменной client
 	require.NoError(t, err, "failed to get parcels by client")
-	require.Equal(t, len(parcels), len(storedParcels), "incorrect number of parcels")
+	assert.Len(t, storedParcels, len(parcels), "incorrect number of parcels")
 	// убедитесь в отсутствии ошибки
 	// убедитесь, что количество полученных посылок совпадает с количеством добавленных
 
@@ -183,11 +187,11 @@ func TestGetByClient(t *testing.T) {
 		// убедитесь, что все посылки из storedParcels есть в parcelMap
 		// убедитесь, что значения полей полученных посылок заполнены верно
 		originalParcel, ok := parcelMap[parcel.Number]
-		require.True(t, ok, "parcel not found in map")
+		assert.True(t, ok, "parcel not found in map")
 
-		require.Equal(t, originalParcel.Client, parcel.Client, "client mismatch")
-		require.Equal(t, originalParcel.Status, parcel.Status, "status mismatch")
-		require.Equal(t, originalParcel.Address, parcel.Address, "address mismatch")
-		require.Equal(t, originalParcel.CreatedAt, parcel.CreatedAt, "created_at mismatch")
+		assert.Equal(t, originalParcel, parcel, "parcel mismatch")
+		assert.Equal(t, originalParcel.Status, parcel.Status, "status mismatch")
+		assert.Equal(t, originalParcel.Address, parcel.Address, "address mismatch")
+		assert.Equal(t, originalParcel.CreatedAt, parcel.CreatedAt, "created_at mismatch")
 	}
 }

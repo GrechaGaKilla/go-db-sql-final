@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 )
 
@@ -84,37 +85,41 @@ func (s ParcelStore) SetStatus(number int, status string) error {
 func (s ParcelStore) SetAddress(number int, address string) error {
 	// реализуйте обновление адреса в таблице parcel
 	// менять адрес можно только если значение статуса registered
-	parcel, err := s.Get(number)
+	query := `UPDATE parcel SET address = ? WHERE number = ? AND status = 'registered'`
+	result, err := s.db.Exec(query, address, number)
 	if err != nil {
-		return fmt.Errorf("failed to get parcel: %w", err)
+		return fmt.Errorf("failed to update address: %w", err)
 	}
 
-	if parcel.Status != ParcelStatusRegistered {
-		return fmt.Errorf("cannot change address for parcel with status '%s'", parcel.Status)
+	// Проверяем, были ли обновлены строки
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get affected rows: %w", err)
+	}
+	if rowsAffected == 0 {
+		return errors.New("address update failed: either parcel not found or status is not 'registered'")
 	}
 
-	_, err = s.db.Exec("UPDATE parcel SET address = ? WHERE number = ?", address, number)
-	if err != nil {
-		return fmt.Errorf("failed to set parcel address: %w", err)
-	}
 	return nil
 }
 
 func (s ParcelStore) Delete(number int) error {
 	// реализуйте удаление строки из таблицы parcel
 	// удалять строку можно только если значение статуса registered
-	parcel, err := s.Get(number)
-	if err != nil {
-		return fmt.Errorf("failed to get parcel: %w", err)
-	}
-
-	if parcel.Status != ParcelStatusRegistered {
-		return fmt.Errorf("cannot delete parcel with status '%s'", parcel.Status)
-	}
-
-	_, err = s.db.Exec("DELETE FROM parcel WHERE number = ?", number)
+	query := `DELETE FROM parcel WHERE number = ? AND status = ?`
+	result, err := s.db.Exec(query, number, ParcelStatusRegistered)
 	if err != nil {
 		return fmt.Errorf("failed to delete parcel: %w", err)
 	}
+
+	// Проверяем, была ли удалена строка
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get affected rows: %w", err)
+	}
+	if rowsAffected == 0 {
+		return errors.New("delete failed: either parcel not found or status is not 'registered'")
+	}
+
 	return nil
 }
